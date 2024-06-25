@@ -1,14 +1,29 @@
 import os
 
+# A subclass for int
+# This means that the int type and PageNumber type is now same just that we have 
+# a explicit int type called PageNumber to denote PageNumber
+class PageNumber(int):
+    pass
+
+class Page:
+    def __init__(self, num, data):
+        # num is of type PageNumber. It is an instance of PageNumber
+        self.num = PageNumber(num)
+        self.data = data
+
 class Dal:
-    def __init__(self, file=None):
+    def __init__(self, file, pagesize):
         self.file = file
+        self.pagesize = pagesize
     
+    # Create a new instance of class with a given file path and 
+    # return the file and its pagesize into the contructor __init__ of dal
     @classmethod
-    def new_dal(cls, path):
+    def new_dal(cls, path, pagesize):
         try:
             file = open(path, 'a+b')
-            return cls(file)
+            return cls(file, pagesize)
         except Exception as e:
             print(f"Error opening file: {e}")
             return None
