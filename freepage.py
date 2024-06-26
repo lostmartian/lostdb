@@ -4,7 +4,7 @@ class PageNumber(int):
 class FreePageList:
     def __init__(self):
         # Page 0 stores the metadata of the database.
-        self.max_page = PageNumber(1)
+        self.max_page = PageNumber(0)
         # Stores the list of pages that were previously used but are now free
         self.released_pages = []
 
@@ -16,6 +16,8 @@ class FreePageList:
             page_id = self.released_pages.pop()
             return page_id
         else:
+            # if the released pages are empty then start from 1st page as 0th page is kept
+            # for metadata
             self.max_page += 1
             return self.max_page
     

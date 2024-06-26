@@ -19,7 +19,10 @@ class PageNumber(int):
 class Page:
     def __init__(self, num, data):
         # num is of type PageNumber. It is an instance of PageNumber
-        self.num = PageNumber(num)
+        if num is not None:
+            self.num = PageNumber(num)
+        else:
+            self.num = None
         self.data = data
 
 class Dal:
@@ -49,6 +52,14 @@ class Dal:
             self.file = None
         return True
     
+    # Allocating an empty page
+    def allocate_empty_page(self):
+        data = bytearray(self.page_size)
+        return Page(None, data)
+    
+    def get_next_page(self):
+        return self.free_page_list.get_next_page()
+
     # Read the page_num from the file. Each page is of page_size hence to access the page_num
     # page we have to move the file pointer by page_size * page_num bytes
     # Example: page_num = 3 and page_size = 1024B. Indexing of page number is done from zero
