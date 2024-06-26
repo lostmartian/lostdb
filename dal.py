@@ -1,4 +1,5 @@
 import os
+from freepage import FreePageList
 
 # Get system page size
 def get_page_size():
@@ -22,20 +23,21 @@ class Page:
         self.data = data
 
 class Dal:
-    def __init__(self, file, page_size):
+    def __init__(self, file, page_size, free_page_list):
         self.file = file
         self.page_size = page_size
+        self.free_page_list = free_page_list
     
     # Create a new instance of class with a given file path and return the file and its 
     # pagesize into the contructor __init__ of dal
     @classmethod
     def new_dal(cls, path, page_size):
         try:
-            file = open(path, 'a+b')
-            return cls(file, page_size)
-        except Exception as e:
-            print(f"Error opening file: {e}")
-            return None
+            file = open(path, 'r+b')
+        except FileNotFoundError:
+            file = open(path, 'w+b')
+        free_page_list = FreePageList()
+        return cls(file, page_size, free_page_list)
     
     def close(self):
         if self.file is not None:
@@ -67,7 +69,7 @@ class Dal:
             return None
     
     # Similar process as of read_page()
-    def write(self, Page):
+    def write_page(self, Page):
         try:
             page_num = Page.num
             data = Page.data
@@ -86,14 +88,5 @@ class Dal:
 
 
 
-if __name__ == "__main__":
-    # d = Dal.new_dal("example.txt")
-    # if d:
-    #     # Perform file operations here if needed
-    #     success = d.close()
-    #     if success:
-    #         print("File closed successfully.")
-    #     else:
-    #         print("Failed to close the file.")
-    print(get_page_size())
+
     
