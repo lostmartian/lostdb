@@ -1,5 +1,5 @@
 import os
-from freepage import FreePageList
+from utils.freepage import FreePageList
 
 # Get system page size
 def get_page_size():

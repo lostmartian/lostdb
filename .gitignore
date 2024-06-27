@@ -2,3 +2,4 @@
 example.txt
 /__pycache__
 database.db
+utils/__pycache__/
