@@ -1,5 +1,6 @@
 import os
 from utils.freepage import FreePageList
+from utils.meta import Meta, META_PAGE_NUM, PAGE_NUM_SIZE
 
 # Get system page size
 def get_page_size():
@@ -95,6 +96,24 @@ class Dal:
             print(f"Error writing page: {e}")
             return False
         return True 
+    
+    def write_meta(self, meta):
+        p = self.allocate_empty_page()
+        p.num = META_PAGE_NUM
+        p.data = meta.serialize()
+
+        if not self.write_page(p):
+            return None
+        return p
+    
+    def read_meta(self):
+        p = self.read_page(META_PAGE_NUM)
+        if p is None:
+            return None
+        meta = Meta.new_empty_meta()
+        meta.deserialize(p.data)
+        return meta
+
 
 
 
