@@ -3,6 +3,8 @@ from utils.freepage import FreePageList
 from utils.meta import Meta, META_PAGE_NUM, PAGE_NUM_SIZE
 
 # Get system page size
+
+
 def get_page_size():
     try:
         page_size = os.sysconf(os.sysconf_names['SC_PAGESIZE'])
@@ -14,8 +16,11 @@ def get_page_size():
 # A subclass for int
 # This means that the int type and PageNumber type is now same just that we have a explicit
 # int type called PageNumber to denote PageNumber
+
+
 class PageNumber(int):
     pass
+
 
 class Page:
     def __init__(self, num, data):
@@ -26,13 +31,61 @@ class Page:
             self.num = None
         self.data = data
 
+
 class Dal:
-    def __init__(self, file, page_size, free_page_list):
-        self.file = file
-        self.page_size = page_size
-        self.free_page_list = free_page_list
-    
-    # Create a new instance of class with a given file path and return the file and its 
+    def __init__(self, path):
+        self.file = None
+        self.page_size = self.get_page_size()
+        self.free_page_list = FreePageList()
+        self.meta = Meta.new_empty_meta()
+
+        if os.path.exists(path):
+            try:
+                self.file = open(path, 'r+b')
+            except Exception as e:
+                print(f"Error opening file: {e}")
+                if self.file:
+                    self.file.close()
+                return None
+
+            meta = self.read_meta()
+            if meta:
+                self.meta = meta
+
+            freelist = self.read_freelist()
+            if freelist:
+                self.free_page_list = freelist
+
+        else:
+            try:
+                self.file = open(path, 'w+b')
+            except Exception as e:
+                print(f"Error creating file: {e}")
+                if self.file:
+                    self.file.close()
+                return None
+
+            self.free_page_list = FreePageList()
+            self.freelist_page = self.get_next_page()
+            written_freelist = self.write_freelist()
+            if not written_freelist:
+                print("Error writing freelist")
+                return None
+
+            written_meta = self.write_meta(self.meta)
+            if not written_meta:
+                print("Error writing meta")
+                return None
+            
+    def get_page_size(self):
+        try:
+            page_size = os.sysconf(os.sysconf_names['SC_PAGESIZE'])
+            return page_size
+        except AttributeError:
+            print("Could not determine the page size")
+            return None
+
+    # Create a new instance of class with a given file path and return the file and its
     # pagesize into the contructor __init__ of dal
     @classmethod
     def new_dal(cls, path, page_size):
@@ -41,8 +94,9 @@ class Dal:
         except FileNotFoundError:
             file = open(path, 'w+b')
         free_page_list = FreePageList()
-        return cls(file, page_size, free_page_list)
-    
+        meta = Meta.new_empty_meta()
+        return cls(file, page_size, free_page_list, meta)
+
     def close(self):
         if self.file is not None:
             try:
@@ -52,12 +106,12 @@ class Dal:
                 return False
             self.file = None
         return True
-    
+
     # Allocating an empty page
     def allocate_empty_page(self):
         data = bytearray(self.page_size)
         return Page(None, data)
-    
+
     def get_next_page(self):
         return self.free_page_list.get_next_page()
 
@@ -72,14 +126,14 @@ class Dal:
             # the file pointer, point towards the starting of the page_num required
             offset = page_num * self.page_size
             self.file.seek(offset)
-            # Read the page_size byte of data of the page_number as the file_pointer now 
+            # Read the page_size byte of data of the page_number as the file_pointer now
             # points towrds the page_number byte
             data = self.file.read(self.page_size)
             return Page(page_num, data)
         except Exception as e:
             print(f"Error reading page: {e}")
             return None
-    
+
     # Similar process as of read_page()
     def write_page(self, Page):
         try:
@@ -95,8 +149,8 @@ class Dal:
         except Exception as e:
             print(f"Error writing page: {e}")
             return False
-        return True 
-    
+        return True
+
     def write_meta(self, meta):
         p = self.allocate_empty_page()
         p.num = META_PAGE_NUM
@@ -105,18 +159,36 @@ class Dal:
         if not self.write_page(p):
             return None
         return p
-    
+
     def read_meta(self):
         p = self.read_page(META_PAGE_NUM)
         if p is None:
             return None
+        print("pnum", p.num)
         meta = Meta.new_empty_meta()
         meta.deserialize(p.data)
         return meta
-
-
-
-
-
-
     
+    def write_freelist(self):
+        try:
+            p = self.allocate_empty_page()
+            meta_t = self.read_meta()
+            print("pnum", meta_t.freelist_page)
+            p.num = meta_t.freelist_page
+            p.data = self.free_page_list.serialize()
+            # print(p.num)
+            if not self.write_page(p):
+                raise Exception("Failed to write freelist page to database")
+
+            self.meta.freelist_page = p.num
+            return p
+        except Exception as e:
+            print(f"Error writing freelist: {e}")
+            return None
+
+    def read_freelist(self):
+        p = self.read_page(self.meta.freelist_page)
+        if p is None:
+            return None
+        self.free_page_list.deserialize(p.data)
+        return self.free_page_list
