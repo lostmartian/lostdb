@@ -2,44 +2,40 @@ from utils.dal import Dal
 
 
 def main():
-    # Initialize or open the database
-    db_path = "db.db"
-    dal = Dal(db_path)
+    page_size = Dal.get_page_size()
+    if not page_size:
+        print("Failed to get page size")
+        return
 
-    try:
-        # Create a new page
-        p = dal.allocate_empty_page()
-        p.num = dal.get_next_page()
-        p.data = bytearray("data", 'utf-8')
+    # Initialize DB
+    dal = Dal.new_dal("db.db", page_size)
 
-        # Write the page to the database
-        dal.write_page(p)
+    # Create a new page
+    p = dal.allocate_empty_page()
+    p.num = dal.freelist.get_next_page()
+    p.data[:4] = b"data"
 
-        # Write the freelist to the database
-        dal.write_freelist()
+    # Commit it
+    dal.write_page(p)
+    dal.write_freelist()
 
-        # Close the database
-        dal.close()
+    # Close the db
+    dal.close()
 
-        # Re-open the database to simulate restart
-        dal = Dal(db_path)
+    # We expect the freelist state was saved, so we write to page number 3 and not overwrite the one at number 2
+    dal = Dal.new_dal("db.db", page_size)
+    p = dal.allocate_empty_page()
+    p.num = dal.freelist.get_next_page()
+    p.data[:5] = b"data2"
+    dal.write_page(p)
 
-        # Create and write another page without overwriting previous pages
-        p = dal.allocate_empty_page()
-        p.num = dal.get_next_page()
-        p.data = bytearray("data2", 'utf-8')
-        dal.write_page(p)
+    # Create a page and free it so the released pages will be updated
+    page_num = dal.freelist.get_next_page()
+    dal.freelist.release_page(page_num)
 
-        # Release a page to update the freelist
-        page_num = dal.get_next_page()
-        dal.free_page_list.release_page(page_num)
-
-        # Write the updated freelist to the database
-        dal.write_freelist()
-
-    finally:
-        # Close the database
-        dal.close()
+    # Commit it
+    dal.write_freelist()
+    dal.close()
 
 
 if __name__ == "__main__":
