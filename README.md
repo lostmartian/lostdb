@@ -6,3 +6,16 @@ Developing a high-performance, disk-based database system utilizing B-Tree index
 
 <img src="https://github.com/lostmartian/lostdb/blob/main/readmefiles/logo.png" width = 40% height=40% position="center">
 
+## Todo
+
+- [X] Data Access Layer
+- [X] FreeList implementation
+- [X] Meta Data
+- [X] BTree Structure
+- [ ] BTree Persistence
+- [ ] BTree Functions
+- [ ] BTree Balancing
+- [ ] Transactions(ACID)
+- [ ] Isolation
+- [ ] Locks
+- [ ] Package
