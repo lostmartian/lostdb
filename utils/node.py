@@ -55,7 +55,10 @@ class Node:
         
         klen = len(item.key)
         vlen = len(item.value)
-        
+        offset = right_pos - klen - vlen - 2
+        buf[left_pos:left_pos + 2] = offset.to_bytes(2, byteorder='little')
+        left_pos += 2
+
 
 # Example usage
 node = Node.new_empty_node()
