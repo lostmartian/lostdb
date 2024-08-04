@@ -37,6 +37,20 @@ def main():
     dal.write_freelist()
     dal.close()
 
+    dal = Dal.new_dal("db.db", page_size)
+    p = dal.allocate_empty_page()
+    p.num = dal.freelist.get_next_page()
+    p.data[:7] = b"Ruchika"
+    dal.write_page(p)
+
+    # Create a page and free it so the released pages will be updated
+    page_num = dal.freelist.get_next_page()
+    dal.freelist.release_page(page_num)
+
+    # Commit it
+    dal.write_freelist()
+    dal.close()
+
 
 if __name__ == "__main__":
     main()
